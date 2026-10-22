@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Quiz Medisur – Mission Rosember (Atelier)</title>
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800;900&family=Open+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root {
+  --teal:    #FF0099;
+  --teal2:   #E0057F;
+  --blue:    #17C3D6;
+  --green:   #7CB342;
+  --dark:    #1a0512;
+  --card:    #2b0f22;
+  --border:  rgba(255,255,255,.14);
+  --text:    #fdf3f8;
+  --muted:   #d99cc0;
+  --A: #2FBFD9;
+  --B: #7A1257;
+  --C: #F2A541;
+  --D: #FF66C3;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'Open Sans',sans-serif;background:var(--dark);color:var(--text);min-height:100vh;overflow:hidden;}
+
+.bg-grad{position:fixed;inset:0;z-index:0;
+  background:
+    radial-gradient(ellipse 70% 50% at 0% 50%,rgba(255,0,153,.10) 0%,transparent 60%),
+    radial-gradient(ellipse 50% 70% at 100% 30%,rgba(23,195,214,.16) 0%,transparent 60%),
+    linear-gradient(160deg,#1a0512 0%,#120309 100%);
+}
+.glyph{position:fixed;border-radius:50%;opacity:.06;pointer-events:none;z-index:0;}
+.glyph1{width:400px;height:400px;background:var(--teal);top:-100px;right:-100px;}
+.glyph2{width:280px;height:280px;background:var(--blue);bottom:-80px;left:-80px;}
+.glyph3{width:160px;height:160px;background:var(--C);top:40%;left:5%;}
+
+.screen{position:fixed;inset:0;z-index:10;display:flex;flex-direction:column;align-items:center;padding:2rem;overflow-y:auto;-webkit-overflow-scrolling:touch;opacity:0;pointer-events:none;transition:opacity .4s ease;}
+.screen.active{opacity:1;pointer-events:all;}
+
+.medisur-logo svg{width:auto;}
+.logo-sm{height:100px;}
+.logo-md{height:76px;}
+.logo-lg{height:130px;}
+#lobby-logo{margin-bottom:.5rem;}
+
+/* ══ LOBBY ══ */
+#screen-lobby{background:transparent;}
+.lobby-inner{display:flex;flex-direction:column;align-items:center;gap:1.8rem;max-width:700px;width:100%;text-align:center;margin:auto 0;}
+.lobby-title{font-family:'Montserrat',sans-serif;font-size:clamp(2rem,5vw,3.8rem);font-weight:900;line-height:1.05;letter-spacing:-.02em;}
+.lobby-title .t1{color:var(--text);}
+.lobby-title .t2{background:linear-gradient(90deg,var(--teal),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.lobby-sub{color:var(--muted);font-size:1rem;max-width:440px;}
+
+.code-card{background:var(--card);border:1.5px solid var(--teal);border-radius:20px;padding:2rem 3.5rem;box-shadow:0 0 50px rgba(255,0,153,.2);position:relative;overflow:hidden;}
+.code-card::before{content:'';position:absolute;inset:0;background:linear-gradient(135deg,rgba(255,0,153,.07),transparent);pointer-events:none;}
+.code-lbl{font-size:.78rem;letter-spacing:.2em;text-transform:uppercase;color:var(--muted);margin-bottom:.4rem;}
+.code-val{font-family:'Montserrat',sans-serif;font-size:clamp(3rem,8vw,5.5rem);font-weight:900;color:var(--teal);letter-spacing:.15em;line-height:1;}
+.code-url{margin-top:.6rem;font-size:.82rem;color:var(--muted);}
+.code-url b{color:var(--text);}
+
+.qr-wrap{background:#fff;padding:.9rem 1.1rem .7rem;border-radius:18px;display:inline-flex;flex-direction:column;align-items:center;gap:.5rem;box-shadow:0 0 40px rgba(23,195,214,.35);border:1.5px solid var(--blue);}
+.qr-wrap img{display:block;border-radius:6px;width:150px;height:150px;}
+.qr-lbl{font-family:'Montserrat',sans-serif;font-size:.75rem;font-weight:800;color:var(--blue);text-align:center;letter-spacing:.02em;}
+
+.players-wrap{text-align:center;}
+.players-num{font-family:'Montserrat',sans-serif;font-size:3rem;font-weight:900;color:var(--teal);}
+.players-lbl{font-size:.8rem;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);}
+.players-chips{display:flex;flex-wrap:wrap;gap:.5rem;justify-content:center;margin-top:.8rem;max-width:580px;}
+.chip{background:rgba(23,195,214,.14);border:1px solid var(--border);border-radius:100px;padding:.35rem .9rem;font-size:.82rem;animation:popIn .3s cubic-bezier(.34,1.56,.64,1);}
+@keyframes popIn{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
+
+.btn-primary{font-family:'Montserrat',sans-serif;font-weight:800;font-size:1.1rem;background:linear-gradient(135deg,var(--teal),var(--blue));color:white;border:none;padding:1rem 3rem;border-radius:100px;cursor:pointer;box-shadow:0 8px 28px rgba(23,195,214,.3);transition:transform .2s,box-shadow .2s;}
+.btn-primary:hover{transform:translateY(-3px);box-shadow:0 12px 36px rgba(23,195,214,.45);}
+.btn-primary:disabled{opacity:.35;cursor:not-allowed;box-shadow:none;transform:none;}
+.btn-primary:disabled:hover{transform:none;box-shadow:none;}
+.lobby-wait-hint{color:var(--muted);font-size:.85rem;margin-top:-1rem;display:none;}
+.lobby-wait-hint.show{display:block;}
+
+/* ══ QUESTION ══ */
+#screen-question{background:transparent;justify-content:flex-start;padding:0;}
+.q-header{width:100%;padding:1rem 2rem;display:flex;align-items:center;justify-content:space-between;background:rgba(20,5,15,.7);backdrop-filter:blur(12px);border-bottom:1px solid var(--border);}
+.q-info{font-family:'Montserrat',sans-serif;font-size:.85rem;font-weight:700;color:var(--muted);letter-spacing:.08em;}
+.timer-ring{position:relative;width:64px;height:64px;}
+.timer-svg{width:64px;height:64px;transform:rotate(-90deg);}
+.t-bg{fill:none;stroke:rgba(255,255,255,.08);stroke-width:5;}
+.t-fill{fill:none;stroke:var(--blue);stroke-width:5;stroke-linecap:round;stroke-dasharray:176.7;stroke-dashoffset:0;transition:stroke-dashoffset 1s linear,stroke .4s;}
+.t-num{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-family:'Montserrat',sans-serif;font-size:1.3rem;font-weight:900;color:var(--blue);}
+.vote-lbl{font-family:'Montserrat',sans-serif;font-size:.85rem;font-weight:700;color:var(--muted);}
+.vote-lbl span{color:var(--blue);font-size:1.3rem;}
+
+.q-body{flex:1;width:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:1.5rem 2rem;}
+.q-text{font-family:'Montserrat',sans-serif;font-size:clamp(1.2rem,2.8vw,2.2rem);font-weight:800;text-align:center;max-width:860px;line-height:1.25;margin-bottom:2rem;color:var(--text);}
+.q-progress{width:100%;max-width:860px;height:4px;background:rgba(255,255,255,.06);border-radius:2px;margin-bottom:2rem;overflow:hidden;}
+.q-progress-fill{height:100%;background:linear-gradient(90deg,var(--teal),var(--blue));border-radius:2px;transition:width .5s ease;}
+
+.answers-grid{display:grid;grid-template-columns:1fr 1fr;gap:.9rem;width:100%;max-width:860px;}
+.ans-card{border-radius:14px;padding:1.1rem 1.4rem;font-family:'Open Sans',sans-serif;font-size:clamp(.88rem,1.5vw,1.05rem);font-weight:600;display:flex;align-items:center;gap:.9rem;border:1.5px solid transparent;cursor:default;transition:transform .2s;}
+.ans-card.A{background:rgba(230,57,112,.14);border-color:var(--A);}
+.ans-card.B{background:rgba(122,18,87,.22);border-color:var(--B);}
+.ans-card.C{background:rgba(255,177,0,.14);border-color:var(--C);}
+.ans-card.D{background:rgba(255,102,195,.12);border-color:var(--D);}
+.ans-letter{width:2rem;height:2rem;border-radius:.5rem;display:flex;align-items:center;justify-content:center;font-family:'Montserrat',sans-serif;font-weight:900;font-size:1rem;flex-shrink:0;}
+.ans-card.A .ans-letter{background:var(--A);}
+.ans-card.B .ans-letter{background:var(--B);}
+.ans-card.C .ans-letter{background:var(--C);}
+.ans-card.D .ans-letter{background:var(--D);}
+.ans-card.correct{transform:scale(1.03);box-shadow:0 0 28px rgba(124,179,66,.4);border-color:var(--green)!important;background:rgba(124,179,66,.18)!important;}
+.ans-card.wrong{opacity:.3;}
+
+/* ══ FEEDBACK ══ */
+#screen-feedback{background:transparent;}
+.fb-inner{display:flex;flex-direction:column;align-items:center;gap:1.5rem;max-width:760px;width:100%;text-align:center;margin:auto 0;}
+.fb-correct{font-family:'Montserrat',sans-serif;font-size:clamp(1.4rem,3vw,2.2rem);font-weight:900;color:var(--green);}
+.fb-expl{color:var(--muted);font-size:.98rem;line-height:1.7;max-width:640px;padding:1.2rem 1.6rem;background:var(--card);border-radius:14px;border:1px solid var(--border);}
+.mini-podium{display:flex;align-items:flex-end;gap:.8rem;}
+.mp-item{display:flex;flex-direction:column;align-items:center;gap:.4rem;min-width:110px;}
+.mp-name{font-size:.82rem;font-weight:600;text-align:center;color:var(--text);}
+.mp-score{font-family:'Montserrat',sans-serif;font-weight:800;font-size:.95rem;color:var(--blue);}
+.mp-bar{border-radius:8px 8px 0 0;display:flex;align-items:center;justify-content:center;font-size:1.6rem;width:72px;}
+.btn-next{font-family:'Montserrat',sans-serif;font-weight:800;font-size:1rem;background:linear-gradient(135deg,var(--teal),var(--blue));color:white;border:none;padding:.85rem 2.4rem;border-radius:100px;cursor:pointer;box-shadow:0 6px 22px rgba(23,195,214,.3);transition:transform .2s;}
+.btn-next:hover{transform:translateY(-2px);}
+
+.fb-stats-wrap{width:100%;max-width:520px;display:flex;flex-direction:column;gap:.4rem;}
+.fb-stats-label{display:flex;justify-content:space-between;font-family:'Montserrat',sans-serif;font-weight:700;font-size:.95rem;}
+.fb-stats-label .good{color:var(--green);}
+.fb-stats-label .bad{color:#ff4d6d;}
+.fb-stats-bar{width:100%;height:14px;border-radius:8px;overflow:hidden;display:flex;background:rgba(255,255,255,.06);}
+.fb-stats-good{height:100%;background:var(--green);transition:width .6s ease;}
+.fb-stats-bad{height:100%;background:#ff4d6d;transition:width .6s ease;}
+.fb-stats-sub{font-size:.78rem;color:var(--muted);text-align:center;}
+
+/* ══ PODIUM FINAL ══ */
+#screen-final{background:transparent;}
+.final-wrap{display:flex;flex-direction:column;align-items:center;gap:1.5rem;width:100%;margin:auto 0;}
+.final-title{font-family:'Montserrat',sans-serif;font-size:clamp(1.8rem,4vw,3rem);font-weight:900;text-align:center;}
+.final-title span{background:linear-gradient(90deg,var(--teal),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.podium-stage{display:flex;align-items:flex-end;justify-content:center;gap:0;margin:.5rem 0;}
+.podium-col{display:flex;flex-direction:column;align-items:center;position:relative;}
+.p-avatar{width:68px;height:68px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Montserrat',sans-serif;font-weight:900;font-size:1.6rem;margin-bottom:.5rem;border:3px solid;animation:floatUp 1s ease forwards;opacity:0;}
+.p-avatar.r1{background:linear-gradient(135deg,#ffd700,#ffaa00);border-color:#ffd700;color:#5a3800;animation-delay:.2s;}
+.p-avatar.r2{background:linear-gradient(135deg,#c0c0c0,#888);border-color:#c0c0c0;color:#2a2a2a;animation-delay:.5s;}
+.p-avatar.r3{background:linear-gradient(135deg,#cd7f32,#a05a20);border-color:#cd7f32;color:#2a1000;animation-delay:.8s;}
+@keyframes floatUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+.p-name{font-family:'Montserrat',sans-serif;font-weight:800;font-size:.9rem;text-align:center;margin-bottom:.3rem;max-width:120px;}
+.p-score{font-family:'Montserrat',sans-serif;font-weight:900;font-size:.85rem;color:var(--blue);margin-bottom:.4rem;}
+.p-medal{font-size:1.4rem;margin-bottom:.3rem;}
+.p-block{width:120px;border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:center;font-family:'Montserrat',sans-serif;font-weight:900;font-size:2rem;position:relative;overflow:hidden;}
+.p-block::after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,rgba(255,255,255,.15),transparent);}
+.p-block.r1{height:160px;background:linear-gradient(180deg,#ffd700,#cc9900);color:#5a3800;}
+.p-block.r2{height:120px;background:linear-gradient(180deg,#c0c0c0,#888888);color:#222;}
+.p-block.r3{height:90px;background:linear-gradient(180deg,#cd7f32,#8b5020);color:#fff;}
+.p-rank-num{font-size:2.5rem;position:relative;z-index:1;}
+.final-list{display:flex;flex-direction:column;gap:.5rem;width:100%;max-width:480px;max-height:220px;overflow-y:auto;}
+.final-list::-webkit-scrollbar{width:4px;}
+.final-list::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px;}
+.fl-row{display:flex;align-items:center;gap:.9rem;background:var(--card);border-radius:10px;padding:.7rem 1.2rem;border:1px solid var(--border);}
+.fl-rank{font-family:'Montserrat',sans-serif;font-weight:900;font-size:1.1rem;width:1.8rem;text-align:center;}
+.r1c{color:#ffd700;}.r2c{color:#c0c0c0;}.r3c{color:#cd7f32;}
+.fl-name{flex:1;font-weight:600;font-size:.9rem;}
+.fl-score{font-family:'Montserrat',sans-serif;font-weight:900;color:var(--teal);font-size:.9rem;}
+.btn-restart{font-family:'Montserrat',sans-serif;font-weight:700;font-size:.95rem;background:transparent;border:2px solid var(--blue);color:var(--blue);padding:.7rem 2rem;border-radius:100px;cursor:pointer;transition:all .2s;}
+.btn-restart:hover{background:var(--blue);color:#fff;}
+
+/* ══ FIN DE QUIZ (bouton animatrice) ══ */
+.btn-end{position:fixed;bottom:1.5rem;right:1.5rem;z-index:50;font-family:'Montserrat',sans-serif;font-weight:700;font-size:.85rem;background:rgba(20,5,15,.85);backdrop-filter:blur(8px);border:1.5px solid #ff4d6d;color:#ff4d6d;padding:.65rem 1.3rem;border-radius:100px;cursor:pointer;transition:all .2s;box-shadow:0 4px 18px rgba(0,0,0,.35);}
+.btn-end:hover{background:#ff4d6d;color:#fff;transform:translateY(-2px);}
+
+/* ══ MOBILE ══ */
+#screen-mobile{background:transparent;padding:1.2rem;}
+#screen-mobile > div{margin:auto 0;}
+.mob-section{width:100%;max-width:380px;display:flex;flex-direction:column;gap:.9rem;align-items:center;}
+.mob-title{font-family:'Montserrat',sans-serif;font-weight:900;font-size:1.3rem;text-align:center;background:linear-gradient(90deg,var(--teal),var(--blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+.mob-sub{color:var(--muted);font-size:.85rem;text-align:center;}
+.mob-input{width:100%;padding:.9rem 1.3rem;background:var(--card);border:1.5px solid var(--border);border-radius:12px;color:var(--text);font-family:'Open Sans',sans-serif;font-size:1rem;outline:none;text-align:center;letter-spacing:.08em;transition:border-color .2s;}
+.mob-input:focus{border-color:var(--teal);}
+.btn-join{width:100%;padding:.9rem;background:linear-gradient(135deg,var(--teal),var(--blue));border:none;border-radius:12px;font-family:'Montserrat',sans-serif;font-size:1rem;font-weight:800;color:white;cursor:pointer;transition:transform .15s;}
+.btn-join:active{transform:scale(.97);}
+.mob-error{color:#ff4d6d;font-size:.85rem;display:none;text-align:center;}
+.mob-vote-grid{display:grid;grid-template-columns:1fr 1fr;gap:.7rem;width:100%;}
+.mob-vote-btn{-webkit-appearance:none;appearance:none;aspect-ratio:1;border:none;border-radius:14px;cursor:pointer;font-family:'Montserrat',sans-serif;font-size:2.2rem;font-weight:900;color:#fff!important;-webkit-text-fill-color:#fff;transition:transform .15s,filter .2s;box-shadow:0 6px 20px rgba(0,0,0,.3);}
+.mob-vote-btn:active{transform:scale(.9);}
+.vA{background:var(--A);}.vB{background:var(--B);}.vC{background:var(--C);}.vD{background:var(--D);}
+.mob-vote-btn.voted{filter:brightness(.35);cursor:default;}
+.mob-status{font-family:'Montserrat',sans-serif;font-weight:700;text-align:center;padding:1.2rem;background:var(--card);border-radius:12px;width:100%;border:1px solid var(--border);}
+.mob-pname{font-family:'Montserrat',sans-serif;font-weight:800;font-size:.95rem;color:var(--blue);text-align:center;}
+
+.confetti{position:fixed;top:-10px;pointer-events:none;z-index:999;animation:fall linear forwards;}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg);opacity:0}}
+</style>
+</head>
+<body>
+<div class="bg-grad"></div>
+<div class="glyph glyph1"></div>
+<div class="glyph glyph2"></div>
+<div class="glyph glyph3"></div>
+
+<template id="tpl-logo">
+<svg viewBox="0 0 396.85 255.12" xmlns="http://www.w3.org/2000/svg"><defs><style>.w{fill:#fff}</style></defs><path class="w" d="M244.26,106.4h-2.46c-1.93,0-2.43-.51-4.1-4.2-.7-1.55-1.86-4.58-3.08-7.79-1.44-3.78-2.93-7.69-4.15-10.44a10.6,10.6,0,0,0-9.99-6.41,10.16,10.16,0,0,0-9.33,6.78c-1.11,2.98-2.89,10.63-4.78,18.72-1.5,6.43-3.2,13.71-3.97,15.84-.34.95-.76,1.53-1.53,1.53s-1.22-.56-1.58-1.49l-.004-.01c-.76-2.39-3.03-11.89-5.22-21.1-3.58-15.04-6.01-25.12-7.09-28a10.16,10.16,0,0,0-9.33-6.78,10.6,10.6,0,0,0-10,6.42c-1.2,2.72-3.36,8.24-5.44,13.57-1.76,4.51-3.58,9.17-4.3,10.75-1.65,3.65-2.19,4.2-4.1,4.2h-2.46a4.62,4.62,0,0,0-4.69,4.36,4.48,4.48,0,0,0,4.48,4.6h2.67c7.97,0,10.66-5.92,12.26-9.46.81-1.79,2.51-6.15,4.48-11.19,1.95-5,4.17-10.67,5.29-13.21.45-1.01.99-1.12,1.54-1.08a1.3,1.3,0,0,1,1.21.95c.96,2.58,4.18,16.1,6.77,26.96,2.91,12.2,3.94,17.51,5.56,22.19a10.42,10.42,0,0,0,9.81,7.32l.1-.001c4.44-.04,8.22-2.9,9.86-7.45.94-2.62,2.48-9.21,4.27-16.84,1.66-7.12,3.54-15.19,4.45-17.63a1.3,1.3,0,0,1,1.21-.95c.56-.04,1.09.08,1.54,1.08,1.12,2.54,2.64,6.51,3.97,10.01,1.33,3.49,2.48,6.5,3.29,8.29,1.6,3.54,4.29,9.46,12.26,9.46h2.67a4.48,4.48,0,0,0,4.48-4.6,4.62,4.62,0,0,0-4.69-4.36Z"/><path class="w" d="M111.39,163.15l5.02,26.45c.23,1.32-.91,2.26-2.34,2.26a2.23,2.23,0,0,1-2.37-1.71l-4.7-26.41a.6.6,0,0,0-.63-.48.65.65,0,0,0-.66.43l-7.41,24.77a4.98,4.98,0,0,1-9.44.02l-7.41-24.56a.68.68,0,0,0-1.28.05l-4.59,26.41a2.19,2.19,0,0,1-2.34,1.71c-1.45,0-2.57-.93-2.34-2.26l4.88-26.45c.43-2.33,2.22-3.67,4.93-3.67,2.59,0,4.31,1.16,4.9,3.38l7.33,24.72a.77.77,0,0,0,1.43,0l7.21-24.72c.57-2.21,2.28-3.38,4.93-3.38C109.13,159.48,110.96,160.89,111.39,163.15Z"/><path class="w" d="M151.73,161.49a2.07,2.07,0,0,1-2.31,1.8H130.46v10.54h18.25a1.8,1.8,0,1,1,0,3.49H130.46v10.74h19.08a1.86,1.86,0,1,1,0,3.6H129.71c-2.59,0-3.93-1.41-3.93-3.12V162.81c0-1.69,1.34-3.12,3.93-3.12h19.7A2.07,2.07,0,0,1,151.73,161.49Z"/><path class="w" d="M192.58,172a39.45,39.45,0,0,1,0,7.34c-.68,7.23-7.7,12.32-16.91,12.32H165.27c-2.59,0-3.93-1.39-3.93-3.12V162.79c0-1.71,1.34-3.1,3.93-3.1h10.27C184.88,159.69,191.9,164.86,192.58,172ZM166.01,163.38V187.96h9.49c7.04,0,11.75-3.56,12.35-8.96a30,30,0,0,0,.03-6.59c-.6-5.43-5.33-9.03-12.38-9.03Z"/><path class="w" d="M207.01,161.42v28.51a2.38,2.38,0,0,1-4.68,0V161.42a2.38,2.38,0,0,1,4.68,0Z"/><path class="w" d="M241.62,161.92a1.74,1.74,0,0,1,.86,1.44,2.13,2.13,0,0,1-2.31,1.85,3.46,3.46,0,0,1-1.68-.5,17.47,17.47,0,0,0-8.21-1.76c-6.56,0-8.98,2.49-8.98,5.31,0,2.96,2.25,4.22,9.75,5.36,9.89,1.51,14.11,3.81,14.11,9.08,0,5.59-5.36,9.37-14.48,9.37a26.37,26.37,0,0,1-13.74-3.38,1.95,1.95,0,0,1-1.2-1.64,2.11,2.11,0,0,1,2.31-1.85,3.3,3.3,0,0,1,1.77.55c2.71,1.55,5.59,2.65,10.98,2.65,6.04,0,9.69-2.14,9.69-5.7,0-2.94-2.79-4.27-10.61-5.43-9.27-1.37-13.26-3.92-13.26-8.99,0-5.5,5.25-8.99,13.66-8.99C235.03,159.3,239.28,160.35,241.62,161.92Z"/><path class="w" d="M285.47,161.42v17.29c0,7.94-6.87,13.36-16.14,13.36-9.27,0-16.14-5.43-16.14-13.36V161.42a2.15,2.15,0,0,1,2.31-1.94,2.1,2.1,0,0,1,2.34,1.94v17.22c0,6.07,4.93,9.83,11.49,9.83,6.56,0,11.46-3.76,11.46-9.83V161.42a2.15,2.15,0,0,1,2.34-1.94A2.1,2.1,0,0,1,285.47,161.42Z"/><path class="w" d="M324.73,169.49c0,4.79-3.11,8.16-9.75,9.01l10.32,10.13a1.83,1.83,0,0,1,.69,1.35,2.16,2.16,0,0,1-2.37,1.89,2.71,2.71,0,0,1-1.88-.73l-10.46-10.51a3.89,3.89,0,0,0-3.19-1.46h-7.02v10.76a2.07,2.07,0,0,1-2.34,1.94c-1.48,0-2.34-.87-2.34-1.94V162.67c0-1.44.97-2.99,3.88-2.99h11.55C319.28,159.69,324.73,163.24,324.73,169.49Zm-23.64-6.23v12.34h9.84c6.67,0,9.12-2.51,9.12-6.13,0-3.74-2.74-6.2-8.44-6.2Z"/></svg>
+</template>
+
+<!-- ══ LOBBY ══ -->
+<div class="screen active" id="screen-lobby">
+  <div class="lobby-inner">
+    <div class="medisur-logo" id="lobby-logo"></div>
+    <div class="lobby-title">
+      <div class="t1">Mission</div>
+      <div class="t2">Rosember</div>
+    </div>
+    <p class="lobby-sub">Testez vos connaissances sur le dépistage du cancer du sein et des cancers masculins</p>
+    <div class="code-card">
+      <div class="code-lbl">Code de la salle</div>
+      <div class="code-val" id="room-code">…</div>
+      <div class="code-url">Sur ton téléphone : même URL + <b>#player</b></div>
+    </div>
+    <div class="qr-wrap" id="qr-wrap">
+      <img id="qr-img" width="150" height="150" alt="QR code pour rejoindre le quiz">
+      <div class="qr-lbl">Scanne-moi pour jouer</div>
+    </div>
+    <div class="players-wrap">
+      <div class="players-num" id="lobby-count">0</div>
+      <div class="players-lbl">participant(s) connecté(s)</div>
+      <div class="players-chips" id="players-list"></div>
+    </div>
+    <button class="btn-primary" id="btn-start" onclick="hostStartGame()" disabled>▶&nbsp; Lancer le quiz</button>
+    <p class="lobby-wait-hint" id="lobby-wait-hint">En attente d'au moins un participant…</p>
+  </div>
+</div>
+
+<!-- ══ QUESTION ══ -->
+<div class="screen" id="screen-question">
+  <div class="q-header">
+    <div id="q-logo-header"></div>
+    <div class="q-info" id="q-num-lbl">Question 1/5</div>
+    <div class="timer-ring">
+      <svg class="timer-svg" viewBox="0 0 64 64">
+        <circle class="t-bg" cx="32" cy="32" r="28"/>
+        <circle class="t-fill" id="t-fill" cx="32" cy="32" r="28"/>
+      </svg>
+      <div class="t-num" id="t-num">20</div>
+    </div>
+    <div class="vote-lbl">Votes&nbsp;: <span id="vote-count">0</span></div>
+  </div>
+  <div class="q-body">
+    <div class="q-progress"><div class="q-progress-fill" id="q-progress-fill"></div></div>
+    <div class="q-text" id="q-text"></div>
+    <div class="answers-grid" id="answers-grid"></div>
+  </div>
+</div>
+
+<!-- ══ FEEDBACK ══ -->
+<div class="screen" id="screen-feedback">
+  <div class="fb-inner">
+    <div class="medisur-logo" id="fb-logo"></div>
+    <div class="fb-correct" id="fb-correct">✅ Bonne réponse !</div>
+    <div class="fb-stats-wrap" id="fb-stats"></div>
+    <div class="fb-expl" id="fb-expl"></div>
+    <div class="mini-podium" id="mini-podium"></div>
+    <button class="btn-next" id="btn-next" onclick="hostNextQuestion()">Question suivante →</button>
+  </div>
+</div>
+
+<!-- ══ PODIUM FINAL ══ -->
+<div class="screen" id="screen-final">
+  <div class="final-wrap">
+    <div class="medisur-logo" id="final-logo"></div>
+    <div class="final-title">🎗️ <span>Classement Final</span></div>
+    <div class="podium-stage" id="podium-stage"></div>
+    <div class="final-list" id="final-list"></div>
+    <button class="btn-restart" onclick="hostRestart()">🔄 Recommencer</button>
+  </div>
+</div>
+
+<!-- ══ MOBILE ══ -->
+<div class="screen" id="screen-mobile">
+  <div class="mob-section" id="mob-join">
+    <div id="mob-logo-join"></div>
+    <div class="mob-title">Rosember</div>
+    <p class="mob-sub">Quiz Dépistage &amp; Prévention – Sein &amp; Masculin</p>
+    <input class="mob-input" id="mob-code" placeholder="Code de la salle (4 chiffres)" maxlength="4" inputmode="numeric" oninput="this.value=this.value.replace(/\D/g,'')">
+    <input class="mob-input" id="mob-name" placeholder="Ton prénom" maxlength="16">
+    <button class="btn-join" onclick="mobileJoin()">Rejoindre →</button>
+    <div class="mob-error" id="mob-error"></div>
+  </div>
+  <div class="mob-section" id="mob-wait" style="display:none">
+    <div id="mob-logo-wait"></div>
+    <div class="mob-pname" id="mob-wait-name"></div>
+    <div class="mob-status" style="color:var(--muted)">⏳ En attente du lancement…</div>
+  </div>
+  <div id="mob-vote" style="display:none;width:100%;max-width:380px;padding:0 .5rem">
+    <div class="mob-pname" style="margin-bottom:.3rem" id="mob-vote-name"></div>
+    <p style="color:var(--muted);font-size:.8rem;text-align:center;margin-bottom:.8rem" id="mob-vote-qnum"></p>
+    <div class="mob-vote-grid">
+      <button class="mob-vote-btn vA" id="vbA" onclick="mobileVote('A')">A</button>
+      <button class="mob-vote-btn vB" id="vbB" onclick="mobileVote('B')">B</button>
+      <button class="mob-vote-btn vC" id="vbC" onclick="mobileVote('C')">C</button>
+      <button class="mob-vote-btn vD" id="vbD" onclick="mobileVote('D')">D</button>
+    </div>
+    <div class="mob-status" id="mob-voted-msg" style="display:none;color:var(--blue);margin-top:.8rem">✅ Vote enregistré !<br><small style="color:var(--muted)">Attends la révélation…</small></div>
+  </div>
+  <div class="mob-section" id="mob-result" style="display:none">
+    <div class="mob-pname" id="mob-result-name"></div>
+    <div id="mob-result-emoji" style="font-size:2.8rem;margin:.5rem 0"></div>
+    <div id="mob-result-score" style="font-family:'Montserrat',sans-serif;font-size:2.5rem;font-weight:900;color:var(--teal)"></div>
+    <div style="color:var(--muted);font-size:.8rem">pts cumulés</div>
+  </div>
+  <div class="mob-section" id="mob-final" style="display:none">
+    <div style="font-size:3rem">🎗️</div>
+    <div class="mob-pname" id="mob-final-name"></div>
+    <div id="mob-final-rank" style="font-family:'Montserrat',sans-serif;font-size:1.4rem;font-weight:900;color:var(--blue)"></div>
+    <div id="mob-final-score" style="color:var(--muted);font-size:.85rem"></div>
+  </div>
+</div>
+
+<!-- ══ BOUTON FIN DE QUIZ (animatrice) ══ -->
+<button class="btn-end" id="btn-end-quiz" onclick="hostEndQuiz()" style="display:none">⏹ Fin de quiz</button>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+import { getDatabase, ref, set, get, onValue, update, remove }
+  from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyDWgNKGkaKPpK4mZeVugUW-EUoog0r7fhg",
+  authDomain: "quiz-somnolence.firebaseapp.com",
+  databaseURL: "https://quiz-somnolence-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "quiz-somnolence",
+  storageBucket: "quiz-somnolence.firebasestorage.app",
+  messagingSenderId: "531936795088",
+  appId: "1:531936795088:web:becc8ebf1776fb42e081d5"
+};
+const app = initializeApp(firebaseConfig);
+const db  = getDatabase(app);
+
+// ══ BANQUES DE QUESTIONS — MISSION ROSEMBER (SEIN + MASCULIN) ══
+const ALL_QUESTIONS_ROSE = [
+  { text:"Le cancer du sein touche uniquement les femmes.", answers:["Vrai","Faux"], correct:1,
+    explanation:"Le cancer du sein touche aussi les hommes (environ 500 cas par an en France, ~1% des cas). Il est souvent diagnostiqué plus tard chez eux, d'où l'importance du dépistage pour tous. Source : INCa" },
+  { text:"Le cancer du sein est la première cause de mortalité par cancer chez la femme.", answers:["Vrai","Faux"], correct:0,
+    explanation:"Environ 12 600 décès estimés en 2021, soit 18% des décès par cancer féminin en France. Source : INCa" },
+  { text:"Si une boule est détectée dans le sein, c'est forcément un cancer.", answers:["Vrai","Faux"], correct:1,
+    explanation:"Entre 50% et 80% des masses détectées sont bénignes (kystes, fibroadénomes). Il faut néanmoins toujours consulter pour vérifier. Source : INCa" },
+  { text:"Tumeur et cancer, c'est la même chose.", answers:["Vrai","Faux"], correct:1,
+    explanation:"Une tumeur peut être bénigne ou maligne. Le cancer est une tumeur maligne : toutes les tumeurs ne sont donc pas des cancers. Source : INCa" },
+  { text:"La majorité des cancers du sein débutent par une petite boule à proximité de l'aisselle.", answers:["Vrai","Faux"], correct:0,
+    explanation:"C'est le \"quadrant supéro-externe\" du sein, la zone la plus souvent concernée. Toute boule doit néanmoins être examinée par un professionnel. Source : INCa" },
+  { text:"Quel pourcentage de cancers du sein peuvent être guéris s'ils sont détectés tôt ?",
+    answers:["60%","70%","80%","90%"], correct:3,
+    explanation:"Détecté à un stade précoce, le taux de guérison avoisine 90%, d'où l'importance du dépistage régulier. Source : INCa" },
+  { text:"Combien de nouveaux cas de cancer du sein sont diagnostiqués chaque année en France ?",
+    answers:["30 000","45 000","60 000","75 000"], correct:2,
+    explanation:"Environ 61 214 nouveaux cas ont été diagnostiqués en 2023, ce qui en fait le cancer le plus fréquent chez la femme. Source : INCa" },
+  { text:"Quelle est la proportion de femmes touchées par un cancer du sein au cours de leur vie ?",
+    answers:["1 sur 20","1 sur 15","1 sur 8","1 sur 5"], correct:2,
+    explanation:"En France, 1 femme sur 8 sera touchée par un cancer du sein, le cancer le plus fréquent chez la femme. Source : INCa" },
+  { text:"En quelle année la campagne Octobre Rose a-t-elle été lancée en France ?",
+    answers:["1985","1990","1994","2000"], correct:2,
+    explanation:"Lancée en 1994 par l'association « Le Cancer du Sein, Parlons-en ! ». À l'international, l'initiative date de 1992 (Evelyn Lauder et Alexandra Penney). Source : INCa" },
+  { text:"Si on n'a pas d'antécédents familiaux, on ne risque pas d'avoir un cancer du sein.", answers:["Vrai","Faux"], correct:1,
+    explanation:"Seuls 5 à 10% des cancers du sein sont héréditaires. L'âge, le mode de vie et l'exposition aux œstrogènes sont les principaux facteurs. Chaque femme est concernée. Source : INCa" },
+  { text:"La taille des seins influence le risque de cancer du sein.", answers:["Vrai","Faux"], correct:1,
+    explanation:"La taille n'a pas d'impact direct. Les facteurs déterminants sont l'âge, les antécédents, les hormones et le mode de vie. Source : INCa" },
+  { text:"Avoir des enfants protège du cancer du sein.", answers:["Vrai","Faux"], correct:0,
+    explanation:"Chaque grossesse menée à terme, surtout à un jeune âge, réduirait le risque d'environ 7% (The Lancet, 2002). Ce n'est toutefois pas une garantie absolue. Source : INCa" },
+  { text:"Le travail de nuit augmente le risque de cancer du sein.", answers:["Vrai","Faux"], correct:0,
+    explanation:"Au-delà de 20 ans, le travail de nuit dérègle le rythme circadien et fait baisser la mélatonine, ce qui augmenterait le risque. Source : Inserm" },
+  { text:"Les sels d'aluminium contenus dans les déodorants sont cancérigènes.", answers:["Vrai","Faux","Affaire à suivre"], correct:2,
+    explanation:"L'ANSM conclut que l'exposition cutanée à l'aluminium ne peut être considérée comme présentant un risque cancérigène. Mais en 2023, deux études (suisse et britannique) suggèrent un lien possible avec le cancer du sein, via une instabilité de l'ADN des cellules mammaires. Les autorités sanitaires ne confirment pas ce risque à ce jour : par précaution, mieux vaut limiter les produits contenant des sels d'aluminium. Source : ANSM" },
+  { text:"Une consommation excessive d'alcool augmente le risque de cancer du sein, de la prostate et du testicule.", answers:["Vrai","Faux"], correct:0,
+    explanation:"Même une consommation modérée (1 verre/jour) augmenterait le risque de cancer du sein de 10%. Pour la prostate et le testicule, le lien est moins consensuel selon les études, mais la prudence reste recommandée. Repère Santé publique France : 2 verres par jour maximum, pas tous les jours. Sources : Société Française d'Alcoologie, INCa" },
+  { text:"Les prothèses mammaires augmentent le risque de cancer du sein.", answers:["Vrai","Faux"], correct:1,
+    explanation:"Elles n'augmentent pas le risque, mais peuvent compliquer la détection lors du dépistage : pensez à en informer votre radiologue. Source : INCa" },
+  { text:"Faire du sport régulièrement réduit le risque de cancer du sein, de la prostate et du testicule.", answers:["Vrai","Faux"], correct:0,
+    explanation:"30 minutes d'activité physique modérée, 5 jours par semaine, réduiraient le risque de cancer du sein de 15 à 20%, et joueraient aussi un rôle protecteur pour la prostate et les testicules en régulant les hormones, l'immunité et l'inflammation. Source : INCa, Ligue contre le cancer, Santé Publique France" },
+  { text:"Certains aliments ont des propriétés anti-cancer.", answers:["Vrai","Faux"], correct:0,
+    explanation:"Fruits, légumes, fibres, poissons gras, curcuma... aident à protéger les cellules grâce à leurs propriétés antioxydantes. L'essentiel : une alimentation variée et pas de tabac. Source : INCa" },
+  { text:"Le port du soutien-gorge favorise le cancer du sein.", answers:["Vrai","Faux"], correct:1,
+    explanation:"Aucune preuve scientifique ne relie le port du soutien-gorge au cancer du sein. Source : INCa" },
+  { text:"L'allaitement protège contre le cancer du sein.", answers:["Vrai","Faux"], correct:0,
+    explanation:"L'allaitement prolongé peut réduire le risque, mais ce n'est qu'un facteur parmi d'autres (âge, hérédité, hormones, mode de vie). Source : INCa" },
+  { text:"La pilule contraceptive augmente le risque de cancer du sein.", answers:["Vrai","Faux"], correct:0,
+    explanation:"Un léger surrisque existe pendant la prise et diminue après l'arrêt. Les bénéfices l'emportent pour la majorité des femmes. Source : INCa, Vidal" },
+  { text:"Les FIV (fécondation in vitro) augmentent le risque de cancer du sein.", answers:["Vrai","Faux"], correct:1,
+    explanation:"Aucun lien clair n'a été établi entre la FIV et un risque accru de cancer du sein. Source : INCa" },
+  { text:"La vitamine D réduit le risque de cancer du sein.", answers:["Vrai","Faux"], correct:0,
+    explanation:"Elle jouerait un rôle dans la régulation cellulaire et le système immunitaire. Pas de miracle, mais un bon équilibre de vie. Sources : INCa, American Cancer Society" },
+  { text:"Supprimer complètement le sucre de son alimentation peut « affamer » une tumeur.", answers:["Vrai","Faux"], correct:1,
+    explanation:"Aucune preuve ne le confirme. Le corps a besoin de glucides, et couper le sucre peut créer des carences. Source : American Cancer Society" },
+  { text:"Quelle proportion des cancers du sein est attribuée à la consommation d'alcool ?",
+    answers:["2%","5%","8%","12%"], correct:2,
+    explanation:"Environ 8% des cancers du sein en France sont liés à l'alcool, dont l'éthanol est transformé en acétaldéhyde, une substance cancérigène. Source : INCa" },
+  { text:"La mammographie est un examen douloureux et dangereux.", answers:["Vrai","Faux"], correct:1,
+    explanation:"Elle peut être un peu inconfortable mais c'est bref, et sans danger (faible dose de rayons X). Examen essentiel, recommandé tous les 2 ans dès 50 ans. Source : INCa" },
+  { text:"Quand on fait des mammographies tous les 2 ans, on n'a plus besoin d'aller consulter le gynéco.", answers:["Vrai","Faux"], correct:1,
+    explanation:"La mammographie ne remplace pas un suivi gynécologique régulier, qui permet d'évaluer la santé globale et les autres risques." },
+  { text:"L'autopalpation des seins doit se faire uniquement debout sous la douche.", answers:["Vrai","Faux"], correct:1,
+    explanation:"Elle se pratique en 3 positions : debout sous la douche, allongée, et devant un miroir. L'idée : bien connaître ses seins. Source : INCa" },
+  { text:"À partir de quel âge le dépistage organisé du cancer du sein est-il recommandé en France ?",
+    answers:["40 ans","45 ans","50 ans","55 ans"], correct:2,
+    explanation:"Le programme national recommande une mammographie tous les 2 ans pour les femmes de 50 à 74 ans. Avant 50 ans, un examen clinique est conseillé tous les 1 à 3 ans dès 25 ans. Sources : INCa, HAS" },
+  { text:"Le dépistage du cancer du sein est-il pris en charge à 100% pour les femmes de 50 à 74 ans ?",
+    answers:["Oui","Non","Seulement en cas d'antécédents familiaux","Seulement après un examen médical préalable"], correct:0,
+    explanation:"Le dépistage est gratuit tous les 2 ans grâce à l'Assurance Maladie, sans avance de frais. Source : Ameli.fr" },
+  { text:"La France est-elle bonne élève en matière de dépistage des cancers du sein, de la prostate et du testicule ?",
+    answers:["Oui, championne toutes catégories","Non, en retard sur tous les fronts","Contrastée : plutôt suivie pour le sein et la prostate, à la traîne pour le testicule"], correct:2,
+    explanation:"Le taux de participation au dépistage du cancer du sein n'est plus que de 44% en 2024, en baisse depuis plus de 10 ans (il atteignait 52,3% en 2011-2012). Pour la prostate, un dépistage individuel existe dès 50 ans mais reste inégal selon les hommes. Pour le testicule, il n'existe aucun dépistage organisé en France : beaucoup d'hommes ignorent qu'un auto-examen mensuel peut faire toute la différence. Sources : Santé publique France, INCa, AFU" },
+  { text:"Pourquoi le dépistage du cancer du sein est-il recommandé jusqu'à 74 ans ?",
+    answers:["Le bénéfice du dépistage devient incertain face aux autres risques de santé liés à l'âge","Les cancers prennent leur retraite","C'est moins pertinent, comme chercher du réseau dans un tunnel"], correct:0,
+    explanation:"Après 74 ans, les cancers évoluent souvent plus lentement et d'autres soucis de santé peuvent compliquer les traitements. Les bénéfices du dépistage sont donc moins évidents face aux risques de soins parfois lourds. Sources : Santé Publique France, INCa" },
+  { text:"À quelle fréquence est-il recommandé de pratiquer l'autopalpation, que ce soit pour les seins ou pour les testicules ?",
+    answers:["Tous les jours","Une fois par an","Une fois par mois","Seulement en cas de douleur"], correct:2,
+    explanation:"Pour les seins comme pour les testicules, l'autopalpation est recommandée une fois par mois : idéalement après les règles pour les seins (moins sensibles), et sous la douche pour les testicules (peau détendue). Ce n'est pas un examen médical, mais un bon réflexe pour repérer toute anomalie à temps. Source : INCa" },
+  { text:"Lors de l'autopalpation mammaire, quel(s) signe(s) doit-on surveiller ?",
+    answers:["Boule dure sous la peau","Rétraction ou déformation du mamelon","Rougeur persistante sur la peau du sein","Tous ces signes"], correct:3,
+    explanation:"Boule, changement de forme, modification de la peau, écoulement anormal : tout changement inhabituel mérite une consultation." },
+  { text:"Quel est le rôle du dispositif d'aide à l'autopalpation de Medisur ?",
+    answers:["Remplace la mammographie","Détecte automatiquement un cancer du sein","Améliore le toucher et aide à identifier des anomalies"], correct:2,
+    explanation:"Il facilite l'autopalpation en aidant à mieux sentir ce qui se passe sous la peau : un outil en plus, qui ne remplace ni mammographie ni avis médical. Sources : Medisur, INCa" },
+  { text:"Qui dit cancer du sein, dit forcément ablation du sein.", answers:["Vrai","Faux"], correct:1,
+    explanation:"L'ablation n'est pas systématique : selon le stade, une chirurgie conservatrice, une radiothérapie ou une chimiothérapie peuvent suffire. Source : INCa" },
+  { text:"J'ai un cancer du sein, je vais forcément perdre mes cheveux.", answers:["Vrai","Faux"], correct:1,
+    explanation:"Seule la chimiothérapie entraîne généralement la chute des cheveux ; radiothérapie et hormonothérapie n'ont pas cet effet. Source : INCa" },
+  { text:"Le cancer du sein peut-il diminuer la libido ?",
+    answers:["Oui, à cause des traitements et hormones","Non, aucun impact","Seulement après une ablation","Oui, mais seulement les premiers mois"], correct:0,
+    explanation:"Chimiothérapies et hormonothérapies peuvent causer fatigue, sécheresse et baisse de libido. Des solutions existent : il ne faut pas hésiter à en parler." },
+];
+
+// NB : "Tumeur et cancer, c'est la même chose.", "Certains aliments ont des propriétés
+// anti-cancer." et "Supprimer complètement le sucre de son alimentation peut « affamer »
+// une tumeur." sont des questions génériques qui existaient à l'identique dans la banque
+// Movember d'origine. Elles ont été retirées ci-dessous pour éviter les doublons dans le
+// quiz atelier (elles restent posées une seule fois, via la banque Rose ci-dessus).
+const ALL_QUESTIONS_MOVEMBER = [
+  { text:"Le cancer de la prostate est le plus répandu chez l'homme.", answers:["Vrai","Faux"], correct:0,
+    explanation:"Le cancer de la prostate est effectivement le cancer le plus répandu chez l'homme, en France, avec 59 885 nouveaux cas estimés en 2023. Il devance le cancer du poumon (33 438 cas) et le cancer colorectal (26 212 cas). Source : INCa" },
+  { text:"Le cancer du testicule est le plus fréquent chez l'homme.", answers:["Vrai","Faux"], correct:1,
+    explanation:"Le cancer du testicule est rare : il représente environ 1 à 1,5% des cancers masculins. En France, on recense environ 2 800 nouveaux cas par an. Source : INCa, Santé Publique France" },
+  { text:"Les femmes ne peuvent pas participer à Movember car elles ne portent pas de moustache.", answers:["Vrai","Faux"], correct:1,
+    explanation:"Movember n'est pas réservé qu'aux moustachus. Tout le monde peut s'engager pour la santé masculine : sensibiliser, en parler, organiser des actions, soutenir un proche." },
+  { text:"Se laisser pousser la moustache pendant Movember permet-il de réduire le risque de cancer de la prostate ?",
+    answers:["Oui, c'est un bouclier anti-cancer magique","Non, mais elle aide à sensibiliser et prévenir","Oui, si elle mesure + de 10 cm"], correct:1,
+    explanation:"La moustache ne protège pas directement contre le cancer, mais c'est un excellent moyen de sensibiliser à l'importance du dépistage et de la prévention." },
+  { text:"Quel est le taux de survie à 5 ans du cancer de la prostate lorsqu'il est détecté tôt ?",
+    answers:["53%","83%","93%","Presque 100%"], correct:3,
+    explanation:"Le taux de survie à 5 ans atteint presque 100% lorsqu'il est détecté à un stade précoce, surtout si le cancer est localisé. Cela souligne l'importance du dépistage régulier. Source : Ameli.fr" },
+  { text:"Quel est le taux de guérison du cancer des testicules s'il est détecté à un stade précoce ?",
+    answers:["50%","80%","95%","100%"], correct:2,
+    explanation:"Le cancer des testicules présente un taux de guérison très élevé, jusqu'à 95%, lorsqu'il est détecté tôt, souvent grâce à l'auto-palpation mensuelle. Source : INCa" },
+  { text:"Combien de nouveaux cas de cancer de la prostate sont diagnostiqués chaque année en France ?",
+    answers:["9 800","59 800","69 800","100 000"], correct:1,
+    explanation:"Environ 59 800 nouveaux cas de cancer de la prostate sont diagnostiqués chaque année en France, ce qui en fait l'un des cancers les plus fréquents chez les hommes. Source : INCa" },
+  { text:"Combien de nouveaux cas de cancer des testicules sont diagnostiqués chaque année en France ?",
+    answers:["2 800","5 800","10 800","20 800"], correct:0,
+    explanation:"Chaque année, environ 2 800 nouveaux cas de cancer des testicules sont diagnostiqués en France, touchant principalement les jeunes hommes. Source : Santé Publique France" },
+  { text:"Quelle est la proportion d'hommes qui seront touchés par un cancer de la prostate au cours de leur vie ?",
+    answers:["1 sur 10","1 sur 5","1 sur 3","1 sur 2"], correct:1,
+    explanation:"Environ 1 homme sur 5 sera diagnostiqué avec un cancer de la prostate au cours de sa vie, d'où l'importance d'un check-up régulier. Source : INCa" },
+  { text:"Le cancer du testicule touche principalement quel type d'hommes ?",
+    answers:["Les hommes de + de 65 ans","Les hommes jeunes, entre 15 et 35 ans","Les hommes ayant des antécédents familiaux","Les hommes qui ne portent jamais de boxer"], correct:1,
+    explanation:"Le cancer du testicule est rare, mais c'est le cancer le plus fréquent chez les jeunes hommes de 15 à 35 ans. Détecté tôt, il se soigne dans la grande majorité des cas (plus de 95% de taux de guérison). Source : INCa" },
+  { text:"Les hommes de grande taille ont un risque plus élevé de développer un cancer de la prostate.", answers:["Vrai","Faux"], correct:0,
+    explanation:"Des études suggèrent qu'une grande taille pourrait être liée à un risque légèrement accru, notamment pour les formes agressives, via des facteurs hormonaux (IGF-1). La taille reste un facteur mineur parmi d'autres. Source : WCRF, British Journal of Cancer (2008), INCa" },
+  { text:"Garder son téléphone portable dans la poche pourrait augmenter le risque de cancer du testicule.", answers:["Vrai","Faux"], correct:1,
+    explanation:"À ce jour, aucune preuve scientifique sérieuse ne permet d'affirmer que les ondes du téléphone augmentent le risque de cancer du testicule. Certaines études évoquent un impact possible sur la qualité du sperme, mais le lien avec un cancer reste non démontré. Principe de précaution : mettez-le dans la poche arrière de votre pantalon ! Source : ANSES (2019), National Cancer Institute (USA)" },
+  { text:"Si personne dans ma famille n'a eu de cancer de la prostate, je ne risque rien.", answers:["Vrai","Faux"], correct:1,
+    explanation:"L'absence d'antécédents familiaux ne protège pas à 100%. Le cancer de la prostate peut toucher n'importe quel homme, surtout après 50 ans : l'âge, l'origine ethnique et le mode de vie comptent aussi. Source : INCa, AFU, HAS" },
+  { text:"Faire du vélo augmente le risque de cancer de la prostate et du testicule.", answers:["Vrai","Faux"], correct:1,
+    explanation:"C'est un mythe. La pression de la selle peut provoquer des irritations, mais aucune preuve scientifique solide ne lie le vélo à une hausse du risque de cancer. Source : INCa, Harvard Health Publishing (2020)" },
+  { text:"Fumer du cannabis pourrait augmenter le risque de développer un cancer du testicule.", answers:["Vrai","Faux"], correct:0,
+    explanation:"Une consommation régulière et précoce de cannabis pourrait doubler le risque de cancer du testicule, notamment pour les formes non séminomateuses, plus agressives chez les jeunes hommes. Source : Daling JR et al., Cancer, 2009 ; Gurney JK et al., BMC Cancer, 2015" },
+  { text:"Prendre des compléments alimentaires pour la musculation augmente le risque de cancer des testicules.", answers:["Vrai","Faux"], correct:0,
+    explanation:"Certaines études ont identifié un lien possible entre l'utilisation régulière de compléments (notamment avant 25 ans) et un risque accru. La créatine seule n'est pas directement mise en cause, mais des substances non déclarées dans certains produits pourraient jouer un rôle. Source : Li N et al., British Journal of Cancer, 2015" },
+  { text:"Porter des vêtements trop serrés est mauvais pour les testicules.", answers:["Vrai","Faux"], correct:0,
+    explanation:"Des vêtements très moulants peuvent augmenter la température des testicules, ce qui peut altérer la qualité du sperme et la fertilité à long terme. En revanche, aucune preuve n'établit de lien direct avec un risque accru de cancer. Source : Inserm, Santé Publique France" },
+  { text:"Certains hommes, selon leur origine ethnique, sont plus à risque de développer un cancer de la prostate.", answers:["Vrai","Faux"], correct:0,
+    explanation:"Les hommes d'origine africaine ou afro-antillaise ont un risque plus élevé, souvent plus tôt et sous une forme plus agressive, en raison de facteurs génétiques (BRCA1, BRCA2, HOXB13) et d'un accès parfois plus tardif au dépistage. Suivi recommandé dès 45 ans pour ces hommes. Source : INCa, AFU, Santé publique France" },
+  { text:"Quel est le lien entre banane des Antilles et le cancer de la prostate ?",
+    answers:["Trop sucrée, donc cancérigène","Le chlordécone, pesticide utilisé dans les bananeraies, est un facteur de risque","Aucun lien"], correct:1,
+    explanation:"Le chlordécone, pesticide utilisé jusqu'en 1993 dans les bananeraies aux Antilles, est classé perturbateur endocrinien et associé à un risque plus élevé de cancer de la prostate, notamment en Guadeloupe et Martinique. Source : INSERM (2021), Santé Publique France" },
+  { text:"Le stress peut-il aggraver certains comportements à risque comme une mauvaise alimentation, la sédentarité ou le tabac ?",
+    answers:["Oui, stressé un jour, grignoteur toujours","Non, le stress ne change rien","Les hommes ne sont jamais stressés, voyons !"], correct:0,
+    explanation:"Le stress peut augmenter la probabilité de comportements à risque. À long terme, ces habitudes peuvent augmenter les risques de maladies chroniques, y compris certains cancers. Source : Cancer.fr" },
+  { text:"La vasectomie augmente le risque de cancer.", answers:["Vrai","Faux"], correct:1,
+    explanation:"Les grandes sociétés savantes (comme l'Association Française d'Urologie ou l'American Urological Association) considèrent la vasectomie comme une procédure contraceptive sûre, sans impact négatif à long terme sur l'espérance de vie ou sur le risque d'apparition de maladies graves comme le cancer." },
+  { text:"Le toucher rectal est systématique pour dépister le cancer de la prostate.", answers:["Vrai","Faux"], correct:1,
+    explanation:"Le toucher rectal n'est pas automatique, mais il peut être utile dans l'évaluation de la prostate, surtout en complément du dosage du PSA. Source : INCa, HAS, AFU" },
+  { text:"Est-ce que les urologues préconisent une détection précoce individuelle du cancer de la prostate à partir de 50 ans ?",
+    answers:["Oui","Non"], correct:0,
+    explanation:"L'Association Française d'Urologie (AFU) soutient une démarche individuelle de détection dès 50 ans chez les hommes informés." },
+  { text:"Le dépistage du cancer de la prostate est-il pris en charge à 100% pour les hommes en France ?",
+    answers:["Oui, avec une moustache fournie","Non, sauf en cas de facteurs de risque","Oui, c'est gratuit pour tous","Seulement si le patient en parle"], correct:1,
+    explanation:"Le dépistage n'est pas pris en charge à 100% par l'Assurance Maladie s'il est réalisé de manière systématique. En cas de symptômes ou de facteurs de risque, les examens peuvent être remboursés. Source : Ameli" },
+  { text:"Le dépistage du cancer des testicules est-il pris en charge à 100% en France ?",
+    answers:["Oui","Non, mais la consultation chez le médecin est en partie remboursée","Seulement si on arrive avec moustache ET coupe mulet"], correct:1,
+    explanation:"Il n'existe pas de dépistage organisé du cancer des testicules en France. Les examens ne sont pas toujours remboursés à 100%, mais la consultation est partiellement prise en charge. Source : Ameli.fr" },
+  { text:"Quels sont les premiers signes possibles d'un cancer du testicule ?",
+    answers:["Douleur vive soudaine","Grosseur indolore dans un testicule","Fièvre inexpliquée","Sensation de gêne à la marche"], correct:1,
+    explanation:"Le signe le plus fréquent est une boule ou une masse dans un testicule, souvent indolore. D'où l'intérêt de s'auto-palper régulièrement pour détecter toute anomalie le plus tôt possible." },
+  { text:"Le cancer de la prostate est souvent détecté grâce à :",
+    answers:["Une prise de sang","Une radio","Une coloscopie","Un test ADN maison"], correct:0,
+    explanation:"Le dosage du PSA dans le sang est l'examen de base pour repérer un éventuel cancer de la prostate. Il peut être complété par un toucher rectal, une IRM ou une biopsie." },
+  { text:"Qui dit cancer du testicule, dit forcément ablation du testicule.", answers:["Vrai","Faux"], correct:0,
+    explanation:"Dans la grande majorité des cas, le traitement commence par l'ablation du testicule atteint (orchidectomie), la manière la plus sûre de retirer la tumeur. Un seul testicule suffit largement : hormones, fertilité, libido, rien ne s'écroule. Une prothèse testiculaire existe pour l'aspect esthétique. Source : INCa, HAS, Ligue contre le cancer" },
+  { text:"Les troubles de l'érection peuvent être une conséquence des traitements du cancer de la prostate.", answers:["Vrai","Faux"], correct:0,
+    explanation:"Chirurgie, radiothérapie et hormonothérapie peuvent affecter les nerfs ou vaisseaux impliqués dans l'érection. Des solutions médicales, psychologiques et mécaniques existent : l'essentiel est d'en parler. Source : INCa" },
+  { text:"Le cancer du testicule rend infertile.", answers:["Vrai","Faux"], correct:0,
+    explanation:"Le cancer ou ses traitements (chimiothérapie, ablation) peuvent réduire ou arrêter temporairement la production de spermatozoïdes, mais ce n'est pas automatique. Un passage par la banque du sperme est proposé avant traitement. Source : INCa, AFU" },
+  { text:"Une prothèse testiculaire change les sensations physiques : elle est froide, déclenche les portiques d'aéroport.", answers:["Vrai","Faux"], correct:1,
+    explanation:"Les prothèses testiculaires sont des implants souples (silicone ou gel), ni froids ni métalliques : aucun risque de biper à l'aéroport. Elles préservent surtout l'image de soi. Source : AFU, INCa, HAS" },
+  { text:"Le cancer du testicule va ruiner ma vie sexuelle.", answers:["Vrai","Faux"], correct:1,
+    explanation:"Rien ne change côté libido, plaisir ou érection : les testicules produisent la testostérone, mais un traitement hormonal permet de maintenir l'équilibre même en cas d'ablation des deux. Le cancer peut surprendre, mais il n'efface pas la masculinité. Source : INCa, Ligue contre le cancer" },
+  { text:"L'ablation d'un testicule modifie la voix ou la pilosité.", answers:["Vrai","Faux"], correct:1,
+    explanation:"Avec un seul testicule, rien ne change : la testostérone reste suffisante pour garder voix grave et pilosité. Si les deux sont retirés, un traitement à la testostérone permet de tout maintenir normalement. Source : INCa, AFU" },
+];
+
+// ══ VERSION ATELIER : toutes les questions des deux banques (Rose + Movember, dédoublonnées)
+// sont utilisées, regroupées par thème (définitions & chiffres clés, facteurs de risque,
+// dépistage & prévention, traitement & conséquences), en alternant Sein/Masculin au sein
+// de chaque thème pour garder de la diversité. L'animatrice peut arrêter le quiz à tout
+// moment via le bouton "Fin de quiz".
+const QUIZ_LENGTH = ALL_QUESTIONS_ROSE.length + ALL_QUESTIONS_MOVEMBER.length;
+// Nombre de questions par thème dans chaque banque, dans l'ordre où elles sont écrites
+// ci-dessus : [1. Définitions & chiffres clés, 2. Facteurs de risque, 3. Dépistage &
+// prévention, 4. Traitement & conséquences].
+const ROSE_THEME_COUNTS = [9, 16, 10, 3];
+const MOVEMBER_THEME_COUNTS = [10, 11, 6, 6];
+function pickRandomQuestions(){
+  const result = [];
+  let roseStart = 0, movStart = 0;
+  for(let t = 0; t < ROSE_THEME_COUNTS.length; t++){
+    const roseChunk = ALL_QUESTIONS_ROSE.slice(roseStart, roseStart + ROSE_THEME_COUNTS[t]);
+    const movChunk  = ALL_QUESTIONS_MOVEMBER.slice(movStart, movStart + MOVEMBER_THEME_COUNTS[t]);
+    roseStart += ROSE_THEME_COUNTS[t];
+    movStart  += MOVEMBER_THEME_COUNTS[t];
+    const len = Math.max(roseChunk.length, movChunk.length);
+    for(let i = 0; i < len; i++){
+      if(i < roseChunk.length) result.push(roseChunk[i]);
+      if(i < movChunk.length) result.push(movChunk[i]);
+    }
+  }
+  return result;
+}
+
+let QUESTIONS = [];
+const TIMER=20;
+const IS_MOBILE=window.location.hash==='#player';
+let roomCode=null,myName=null,timerInterval=null,timerVal=TIMER,totalPlayers=0;
+
+function updateJoinQrCode(){
+  const img=document.getElementById('qr-img');if(!img)return;
+  const joinUrl=location.origin+location.pathname+'#player';
+  img.src=`https://api.qrserver.com/v1/create-qr-code/?size=300x300&margin=8&data=${encodeURIComponent(joinUrl)}`;
+}
+
+function injectLogo(id,cls){
+  const el=document.getElementById(id);if(!el)return;
+  const tpl=document.getElementById('tpl-logo');
+  const svg=tpl.content.querySelector('svg').cloneNode(true);
+  svg.classList.add(cls);el.innerHTML='';el.appendChild(svg);
+}
+
+window.addEventListener('load',async()=>{
+  injectLogo('lobby-logo','logo-lg');
+  injectLogo('q-logo-header','logo-sm');
+  injectLogo('fb-logo','logo-sm');
+  injectLogo('final-logo','logo-md');
+  injectLogo('mob-logo-join','logo-md');
+  injectLogo('mob-logo-wait','logo-md');
+  if(IS_MOBILE){showScreen('mobile');mobShow('mob-join');return;}
+  QUESTIONS = pickRandomQuestions();
+  roomCode=String(Math.floor(1000+Math.random()*9000));
+  document.getElementById('room-code').textContent=roomCode;
+  updateJoinQrCode();
+  await remove(ref(db,`rooms/${roomCode}`));
+  await set(ref(db,`rooms/${roomCode}`),{phase:'lobby',currentQ:-1,totalQuestions:QUESTIONS.length});
+  showScreen('lobby');
+  listenAsHost();
+});
+
+const showScreen=n=>{
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById('screen-'+n).classList.add('active');
+  const endBtn=document.getElementById('btn-end-quiz');
+  if(endBtn)endBtn.style.display=(n==='question'||n==='feedback')?'block':'none';
+};
+const mobShow=id=>{['mob-join','mob-wait','mob-vote','mob-result','mob-final'].forEach(i=>{const el=document.getElementById(i);if(el)el.style.display=i===id?'flex':'none';});if(id==='mob-vote')document.getElementById('mob-vote').style.display='block';};
+
+function listenAsHost(){
+  onValue(ref(db,`rooms/${roomCode}/players`),snap=>{
+    const data=snap.val()||{};const names=Object.keys(data);
+    totalPlayers=names.length;
+    document.getElementById('lobby-count').textContent=names.length;
+    const list=document.getElementById('players-list');list.innerHTML='';
+    names.forEach(n=>{const c=document.createElement('div');c.className='chip';c.textContent=n;list.appendChild(c);});
+    const startBtn=document.getElementById('btn-start'),hint=document.getElementById('lobby-wait-hint');
+    if(startBtn)startBtn.disabled=names.length===0;
+    if(hint)hint.classList.toggle('show',names.length===0);
+  });
+  onValue(ref(db,`rooms/${roomCode}/votes`),snap=>{
+    const data=snap.val()||{};const count=Object.keys(data).length;
+    const el=document.getElementById('vote-count');if(el)el.textContent=count;
+    if(document.getElementById('screen-question').classList.contains('active')&&totalPlayers>0&&count>=totalPlayers){
+      clearInterval(timerInterval);hostReveal();
+    }
+  });
+}
+
+window.hostStartGame=async function(){
+  if(totalPlayers===0)return;
+  await update(ref(db,`rooms/${roomCode}`),{phase:'question',currentQ:0,totalQuestions:QUESTIONS.length});
+  showQuestion(0);
+};
+
+function showQuestion(qi){
+  const q=QUESTIONS[qi];
+  document.getElementById('q-num-lbl').textContent=`Question ${qi+1} / ${QUESTIONS.length}`;
+  document.getElementById('q-text').textContent=q.text;
+  document.getElementById('vote-count').textContent='0';
+  document.getElementById('q-progress-fill').style.width=`${(qi/QUESTIONS.length)*100}%`;
+  const grid=document.getElementById('answers-grid');grid.innerHTML='';
+  ['A','B','C','D'].slice(0,q.answers.length).forEach((l,i)=>{
+    const c=document.createElement('div');c.className=`ans-card ${l}`;c.id=`ans-${l}`;
+    c.innerHTML=`<span class="ans-letter">${l}</span><span>${q.answers[i]}</span>`;grid.appendChild(c);
+  });
+  showScreen('question');
+  set(ref(db,`rooms/${roomCode}/votes`),null);
+  update(ref(db,`rooms/${roomCode}`),{phase:'question',currentQ:qi,answers:q.answers,totalQuestions:QUESTIONS.length});
+  startTimer();
+}
+
+function startTimer(){
+  clearInterval(timerInterval);timerVal=TIMER;
+  const fill=document.getElementById('t-fill'),disp=document.getElementById('t-num'),perim=175.9;
+  timerInterval=setInterval(()=>{
+    timerVal--;disp.textContent=timerVal;
+    fill.style.strokeDashoffset=perim*(1-timerVal/TIMER);
+    const p=timerVal/TIMER;
+    fill.style.stroke=p>.5?'var(--blue)':p>.25?'#FFB100':'#ff4d6d';
+    disp.style.color=p>.5?'var(--blue)':p>.25?'#FFB100':'#ff4d6d';
+    if(timerVal<=0){clearInterval(timerInterval);hostReveal();}
+  },1000);
+}
+
+async function hostReveal(){
+  clearInterval(timerInterval);
+  const qi=parseInt((await get(ref(db,`rooms/${roomCode}/currentQ`))).val());
+  const q=QUESTIONS[qi];
+  const correctLetter=['A','B','C','D'][q.correct];
+  const votes=(await get(ref(db,`rooms/${roomCode}/votes`))).val()||{};
+  const players=(await get(ref(db,`rooms/${roomCode}/players`))).val()||{};
+  const upd={};
+  Object.entries(votes).forEach(([name,letter])=>{
+    if(letter===correctLetter){
+      const bonus=Math.floor((timerVal/TIMER)*500);
+      upd[`rooms/${roomCode}/players/${name}/score`]=(players[name]?.score||0)+1000+bonus;
+    }
+  });
+  if(Object.keys(upd).length)await update(ref(db),upd);
+  ['A','B','C','D'].forEach(l=>{
+    const c=document.getElementById('ans-'+l);if(!c)return;
+    c.classList.add(l===correctLetter?'correct':'wrong');
+  });
+  const fp=(await get(ref(db,`rooms/${roomCode}/players`))).val()||{};
+  const scores=Object.entries(fp).map(([n,d])=>({name:n,score:d.score||0})).sort((a,b)=>b.score-a.score);
+  const totalVoters=Object.keys(fp).length;
+  const goodCount=Object.values(votes).filter(l=>l===correctLetter).length;
+  const badCount=Math.max(totalVoters-goodCount,0);
+  const goodPct=totalVoters>0?Math.round(goodCount/totalVoters*100):0;
+  const badPct=totalVoters>0?100-goodPct:0;
+  const stats={goodCount,badCount,goodPct,badPct,totalVoters};
+  await update(ref(db,`rooms/${roomCode}`),{phase:'reveal',correctAnswer:correctLetter,scores});
+  setTimeout(()=>hostShowFeedback(q,scores,qi,stats),2200);
+}
+
+function hostShowFeedback(q,scores,qi,stats){
+  document.getElementById('fb-expl').textContent=q.explanation;
+  const statsEl=document.getElementById('fb-stats');
+  if(statsEl){
+    if(stats.totalVoters>0){
+      statsEl.innerHTML=`
+        <div class="fb-stats-label"><span class="good">✅ ${stats.goodPct}% bonnes réponses</span><span class="bad">❌ ${stats.badPct}% mauvaises réponses</span></div>
+        <div class="fb-stats-bar"><div class="fb-stats-good" style="width:${stats.goodPct}%"></div><div class="fb-stats-bad" style="width:${stats.badPct}%"></div></div>
+        <div class="fb-stats-sub">${stats.goodCount}/${stats.totalVoters} participant(s)</div>`;
+    } else {
+      statsEl.innerHTML='';
+    }
+  }
+  const mp=document.getElementById('mini-podium');mp.innerHTML='';
+  const medals=['🥇','🥈','🥉'],heights=[100,70,50],colors=['#ffd700','#c0c0c0','#cd7f32'];
+  scores.slice(0,3).forEach((p,i)=>{
+    mp.innerHTML+=`<div class="mp-item"><div class="mp-name">${p.name}</div><div class="mp-score">${p.score} pts</div><div class="mp-bar" style="height:${heights[i]}px;background:${colors[i]};color:#111">${medals[i]}</div></div>`;
+  });
+  const isLast=qi>=QUESTIONS.length-1;
+  document.getElementById('btn-next').textContent=isLast?'🎗️ Voir le podium final':'Question suivante →';
+  update(ref(db,`rooms/${roomCode}`),{phase:'results'});
+  showScreen('feedback');
+}
+
+window.hostNextQuestion=async function(){
+  const next=parseInt((await get(ref(db,`rooms/${roomCode}/currentQ`))).val())+1;
+  if(next>=QUESTIONS.length)hostFinal();
+  else{await update(ref(db,`rooms/${roomCode}`),{currentQ:next});showQuestion(next);}
+};
+
+async function hostFinal(){
+  const players=(await get(ref(db,`rooms/${roomCode}/players`))).val()||{};
+  const scores=Object.entries(players).map(([n,d])=>({name:n,score:d.score||0})).sort((a,b)=>b.score-a.score);
+  const stage=document.getElementById('podium-stage');stage.innerHTML='';
+  const order=[1,0,2];
+  const rankClass=['r1','r2','r3'];
+  const rankNum=['1','2','3'];
+  const medals=['🥇','🥈','🥉'];
+  order.forEach(i=>{
+    const p=scores[i];if(!p)return;
+    const col=document.createElement('div');col.className='podium-col';
+    const initials=p.name.slice(0,2).toUpperCase();
+    col.innerHTML=`
+      <div class="p-avatar ${rankClass[i]}">${initials}</div>
+      <div class="p-medal">${medals[i]}</div>
+      <div class="p-name">${p.name}</div>
+      <div class="p-score">${p.score} pts</div>
+      <div class="p-block ${rankClass[i]}"><span class="p-rank-num">${rankNum[i]}</span></div>`;
+    stage.appendChild(col);
+  });
+  const list=document.getElementById('final-list');list.innerHTML='';
+  const rankColors=['r1c','r2c','r3c'];
+  scores.forEach((p,i)=>{
+    list.innerHTML+=`<div class="fl-row"><div class="fl-rank ${i<3?rankColors[i]:''}">${i<3?medals[i]:i+1}</div><div class="fl-name">${p.name}</div><div class="fl-score">${p.score} pts</div></div>`;
+  });
+  await update(ref(db,`rooms/${roomCode}`),{phase:'final',scores});
+  showScreen('final');launchConfetti();
+}
+
+// ══ FIN DE QUIZ MANUELLE ══
+// L'animatrice peut cliquer à tout moment pendant une question ou un feedback
+// pour arrêter le quiz et passer directement au podium final.
+window.hostEndQuiz=async function(){
+  if(!confirm('Terminer le quiz maintenant et afficher le podium final ?'))return;
+  clearInterval(timerInterval);
+  await hostFinal();
+};
+
+window.hostRestart=async function(){
+  QUESTIONS = pickRandomQuestions();
+  await remove(ref(db,`rooms/${roomCode}`));
+  await set(ref(db,`rooms/${roomCode}`),{phase:'lobby',currentQ:-1,totalQuestions:QUESTIONS.length});
+  showScreen('lobby');
+};
+
+window.mobileJoin=async function(){
+  const code=document.getElementById('mob-code').value.trim();
+  const name=document.getElementById('mob-name').value.trim();
+  const errEl=document.getElementById('mob-error');errEl.style.display='none';
+  if(!code||!name){errEl.textContent='Remplis les deux champs !';errEl.style.display='block';return;}
+  const snap=await get(ref(db,`rooms/${code}`));
+  if(!snap.exists()){errEl.textContent='❌ Code introuvable. Vérifie !';errEl.style.display='block';return;}
+  roomCode=code;myName=name;
+  await set(ref(db,`rooms/${code}/players/${name}`),{score:0});
+  document.getElementById('mob-wait-name').textContent='👋 '+name;
+  mobShow('mob-wait');
+  listenAsMobile();
+};
+
+function listenAsMobile(){
+  onValue(ref(db,`rooms/${roomCode}`),snap=>{
+    const data=snap.val();if(!data)return;
+    const phase=data.phase;
+    if(phase==='question'){
+      const ansLen=(data.answers||[]).length||4;
+      document.getElementById('mob-vote-name').textContent='👤 '+myName;
+      document.getElementById('mob-vote-qnum').textContent=`Question ${(data.currentQ||0)+1} / ${data.totalQuestions||QUIZ_LENGTH}`;
+      ['A','B','C','D'].forEach((l,i)=>{
+        const b=document.getElementById('vb'+l);
+        if(b){
+          b.classList.remove('voted');b.disabled=false;
+          b.style.display=i<ansLen?'':'none';
+        }
+      });
+      document.getElementById('mob-voted-msg').style.display='none';
+      mobShow('mob-vote');
+    }
+    if(phase==='reveal'){
+      const myVote=data.votes?.[myName];
+      const correct=myVote===data.correctAnswer;
+      const myScore=(data.scores||[]).find(p=>p.name===myName);
+      document.getElementById('mob-result-name').textContent='👤 '+myName;
+      document.getElementById('mob-result-emoji').textContent=correct?'✅ Bonne réponse !':'❌ Pas cette fois…';
+      document.getElementById('mob-result-score').textContent=myScore?myScore.score:'0';
+      mobShow('mob-result');
+    }
+    if(phase==='final'){
+      const scores=data.scores||[];
+      const rank=scores.findIndex(p=>p.name===myName)+1;
+      const myScore=scores.find(p=>p.name===myName);
+      document.getElementById('mob-final-name').textContent='👤 '+myName;
+      document.getElementById('mob-final-rank').textContent=rank?`#${rank} au classement 🏆`:'';
+      document.getElementById('mob-final-score').textContent=myScore?`${myScore.score} points`:'';
+      mobShow('mob-final');
+    }
+  });
+}
+
+window.mobileVote=async function(letter){
+  document.querySelectorAll('.mob-vote-btn').forEach(b=>{b.classList.add('voted');b.disabled=true;});
+  document.getElementById('mob-voted-msg').style.display='block';
+  await set(ref(db,`rooms/${roomCode}/votes/${myName}`),letter);
+};
+
+function launchConfetti(){
+  const colors=['#FF0099','#17C3D6','#7A1257','#0EA5B7','#F2A541','#FF66C3'];
+  for(let i=0;i<100;i++){
+    const el=document.createElement('div');el.className='confetti';
+    el.style.cssText=`left:${Math.random()*100}vw;background:${colors[Math.floor(Math.random()*colors.length)]};width:${5+Math.random()*9}px;height:${5+Math.random()*9}px;border-radius:${Math.random()>.4?'50%':'3px'};animation-duration:${2.5+Math.random()*3}s;animation-delay:${Math.random()*.8}s;`;
+    document.body.appendChild(el);el.addEventListener('animationend',()=>el.remove());
+  }
+}
+</script>
+</body>
+</html>
